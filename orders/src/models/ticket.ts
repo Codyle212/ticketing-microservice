@@ -1,0 +1,80 @@
+import mongoose from 'mongoose';
+import { Order, OrderStatus } from './order';
+interface TicketAttrs {
+    id: string;
+    title: string;
+    price: number;
+}
+
+export interface TicketDoc extends mongoose.Document {
+    title: string;
+    price: number;
+    version: number;
+    isReserved(): Promise<boolean>;
+}
+
+interface TicketModel extends mongoose.Model<TicketDoc> {
+    build(attributes: TicketAttrs): TicketDoc;
+    findByEvent(event: {
+        id: string;
+        version: number;
+    }): Promise<TicketDoc | null>;
+}
+
+const ticketSchema = new mongoose.Schema(
+    {
+        title: {
+            type: String,
+            required: true,
+        },
+        price: {
+            type: Number,
+            required: true,
+            min: 0,
+        },
+    },
+    {
+        toJSON: {
+            transform(doc, ret) {
+                ret.id = ret._id;
+                delete ret._id;
+            },
+        },
+        optimisticConcurrency: true,
+        versionKey: 'version',
+    }
+);
+
+ticketSchema.statics.build = (attributes: TicketAttrs) => {
+    return new Ticket({
+        _id: attributes.id,
+        title: attributes.title,
+        price: attributes.price,
+    });
+};
+ticketSchema.statics.findByEvent = (event: { id: string; version: number }) => {
+    return Ticket.findOne({
+        _id: event.id,
+        version: event.version - 1,
+    });
+};
+ticketSchema.methods.isReserved = async function () {
+    // this === the ticket document we just called 'isReserved' on
+    // 1.Run Query to look at all orders
+    // 2. Find an order where the ticket is ticket we just found *and* the orders status is not cancelled
+    const existingOrder = await Order.findOne({
+        ticket: this,
+        status: {
+            $in: [
+                OrderStatus.Created,
+                OrderStatus.AwaitingPayment,
+                OrderStatus.Complete,
+            ],
+        },
+    });
+    // if not found, return null which is not boolean
+    return !!existingOrder;
+};
+const Ticket = mongoose.model<TicketDoc, TicketModel>('Ticket', ticketSchema);
+
+export { Ticket };

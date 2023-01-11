@@ -1,0 +1,71 @@
+apiVersion: skaffold/v4beta1
+kind: Config
+metadata:
+    name: ticketing
+build:
+    artifacts:
+        - image: codyle212/auth
+          context: auth
+          docker:
+              dockerfile: Dockerfile
+          sync:
+              manual:
+                  - src: 'src/**/*.ts'
+                    dest: .
+        - image: codyle212/client
+          context: client
+          docker:
+              dockerfile: Dockerfile
+          sync:
+              manual:
+                  - src: '**/*.tsx'
+                    dest: .
+        - image: codyle212/tickets
+          context: tickets
+          docker:
+              dockerfile: Dockerfile
+          sync:
+              manual:
+                  - src: 'src/**/*.ts'
+                    dest: .
+        - image: codyle212/orders
+          context: orders
+          docker:
+              dockerfile: Dockerfile
+          sync:
+              manual:
+                  - src: 'src/**/*.ts'
+                    dest: .
+        - image: codyle212/expiration
+          context: expiration
+          docker:
+              dockerfile: Dockerfile
+          sync:
+              manual:
+                  - src: 'src/**/*.ts'
+                    dest: .
+        - image: codyle212/payments
+          context: payments
+          docker:
+              dockerfile: Dockerfile
+          sync:
+              manual:
+                  - src: 'src/**/*.ts'
+                    dest: .
+deploy:
+    kubectl: {}
+manifests:
+    rawYaml:
+        - infrastructure/kubernetes/auth-deployment.yaml
+        - infrastructure/kubernetes/ingress-service.yaml
+        - infrastructure/kubernetes/auth-mongo-deployment.yaml
+        - infrastructure/kubernetes/client-deployment.yaml
+        - infrastructure/kubernetes/tickets-deployment.yaml
+        - infrastructure/kubernetes/tickets-mongo-deployment.yaml
+        - infrastructure/kubernetes/nats-deployment.yaml
+        - infrastructure/kubernetes/orders-deployment.yaml
+        - infrastructure/kubernetes/orders-mongo-deployment.yaml
+        - infrastructure/kubernetes/expiration-redis-deployment.yaml
+        - infrastructure/kubernetes/expiration-deployment.yaml
+        - infrastructure/kubernetes/payments-deployment.yaml
+        - infrastructure/kubernetes/payments-mongo-deployment.yaml
